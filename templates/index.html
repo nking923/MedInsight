@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drug Review Search</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/vanta-styles.css') }}" rel="stylesheet">
+    <style>
+        .autocomplete-suggestions {
+            border: 1px solid #ccc;
+            max-height: 150px;
+            overflow-y: auto;
+            position: absolute;
+            background-color: white;
+            z-index: 1000;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .autocomplete-suggestion {
+            padding: 10px;
+            cursor: pointer;
+        }
+        .autocomplete-suggestion:hover {
+            background-color: #e9e9e9;
+        }
+    </style>
+</head>
+<body>
+    <div id="vanta-bg"></div>
+    <div class="container text-center">
+        <h1>Drug Review Search</h1>
+        <form method="post" action="/search" class="mt-5">
+            <div class="form-group position-relative">
+                <label for="drug_name" class="text-white">Enter Drug Name:</label>
+                <input type="text" class="form-control" id="drug_name" name="drug_name" required autocomplete="off">
+                <div id="suggestions" class="autocomplete-suggestions"></div>
+            </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"></script>
+    <script>
+        VANTA.GLOBE({
+            el: "#vanta-bg",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0xff3f81,
+            backgroundColor: 0x222222,
+            size: 1.00,
+            points: 20.00,
+            maxDistance: 20.00,
+            spacing: 15.00,
+            showDots: true
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('drug_name');
+            const suggestionsDiv = document.getElementById('suggestions');
+
+            input.addEventListener('input', function() {
+                const query = this.value;
+                if (query.length < 2) {
+                    suggestionsDiv.innerHTML = '';
+                    return;
+                }
+
+                fetch(`/autocomplete?query=${query}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const suggestions = data.suggestions;
+                        if (suggestions.length > 0) {
+                            suggestionsDiv.innerHTML = suggestions.map(suggestion =>
+                                `<div class="autocomplete-suggestion">${suggestion}</div>`
+                            ).join('');
+                            suggestionsDiv.style.display = 'block';
+                        } else {
+                            suggestionsDiv.innerHTML = '<div class="autocomplete-suggestion">No suggestions</div>';
+                            suggestionsDiv.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching suggestions:', error);
+                    });
+            });
+
+            suggestionsDiv.addEventListener('click', function(e) {
+                if (e.target.classList.contains('autocomplete-suggestion')) {
+                    input.value = e.target.textContent;
+                    suggestionsDiv.innerHTML = '';
+                    suggestionsDiv.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!suggestionsDiv.contains(e.target) && e.target !== input) {
+                    suggestionsDiv.innerHTML = '';
+                    suggestionsDiv.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
